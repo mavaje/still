@@ -1,0 +1,31 @@
+{
+  "name": "still",
+  "version": "1.0.0",
+  "description": "A simple prayer listing and sharing service",
+  "keywords": [
+    "prayer"
+  ],
+  "homepage": "https://github.com/mavaje/still#readme",
+  "bugs": {
+    "url": "https://github.com/mavaje/still/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mavaje/still.git"
+  },
+  "license": "ISC",
+  "author": "Matthew Jensen",
+  "type": "module",
+  "devDependencies": {
+    "webpack-cli": "^6.0.1"
+  },
+  "dependencies": {
+    "css-loader": "^7.1.2",
+    "mini-css-extract-plugin": "^2.9.4",
+    "sass": "^1.94.2",
+    "sass-loader": "^16.0.6",
+    "ts-loader": "^9.5.4",
+    "typescript": "^5.9.3",
+    "webpack": "^5.103.0"
+  }
+}
