@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "css-loader": "^7.1.2",
+    "firebase": "^12.6.0",
     "mini-css-extract-plugin": "^2.9.4",
     "sass": "^1.94.2",
     "sass-loader": "^16.0.6",

@@ -1,0 +1,51 @@
+{
+  "rules": {
+    "users": {
+      "$user_id": {
+        ".read": "auth != null && auth.uid == $user_id",
+        ".write": "auth != null && (!data.exists() || auth.uid == $user_id)",
+
+        "id": {
+          ".validate": "$user_id == newData.val() && auth.uid == newData.val()"
+        },
+
+        "name": {
+          ".read": true
+        }
+      }
+    },
+    "groups": {
+      "$group_id": {
+        ".read": true,
+        ".write": "auth != null && (!data.exists() || auth.uid == data.child('user_id').val())",
+
+        "id": {
+          ".validate": "$group_id == newData.val()"
+        },
+
+        "user_id": {
+          ".validate": "auth.uid == newData.val()"
+        }
+      }
+    },
+    "prayers": {
+      "$prayer_id": {
+        ".read": true,
+        ".write": "auth != null && (!data.exists() || auth.uid == data.child('user_id').val())",
+
+        "id": {
+          ".validate": "$prayer_id == newData.val()"
+        },
+
+        "user_id": {
+          ".validate": "auth.uid == newData.val()"
+        },
+        
+        "prays": {
+          ".write": true,
+          ".validate": "newData.val() > data.val()"
+        }
+      }
+    }
+  }
+}
