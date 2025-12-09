@@ -45,7 +45,7 @@
 
         "prays": {
           ".write": true,
-          ".validate": "newData.val() > data.val()"
+          ".validate": "newData.val() >= data.val()"
         }
       }
     }

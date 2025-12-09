@@ -1,9 +1,22 @@
 import {Table} from "./table";
-import {PrayerData} from "../schema";
+import {User} from "./user";
 
-export class Prayer extends Table<PrayerData> {
+export interface PrayerReference {
+    prayer_id: string;
+}
 
+export class Prayer extends Table {
     static table = 'prayers';
 
-    declare static find: (id: string) => Promise<Prayer>;
+    user_id?: string;
+    title?: string;
+    body?: string;
+    image?: string;
+    prays?: number = 0;
+    answered?: boolean = false;
+
+    async save(): Promise<this> {
+        this.user_id = User.current.id;
+        return super.save();
+    }
 }

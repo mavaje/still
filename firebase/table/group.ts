@@ -1,9 +1,20 @@
 import {Table} from "./table";
-import {GroupData} from "../schema";
+import {PrayerReference} from "./prayer";
+import {User} from "./user";
 
-export class Group extends Table<GroupData> {
+export interface GroupReference {
+    group_id: string;
+}
 
+export class Group extends Table {
     static table = 'groups';
 
-    declare static find: (id: string) => Promise<Group>;
+    user_id: string;
+    name: string;
+    prayers?: PrayerReference[] = [];
+
+    async save(): Promise<this> {
+        this.user_id = User.current.id;
+        return super.save();
+    }
 }

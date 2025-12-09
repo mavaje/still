@@ -1,4 +1,6 @@
-import {Prayer} from "./firebase/table/prayer";
+import {User} from "./firebase/table/user";
 
-Prayer.find('123')
-    .then(prayer => console.log(prayer.data));
+User.get_current()
+    .then(user => {
+        document.body.innerHTML = user.id;
+    });
