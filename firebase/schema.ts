@@ -8,14 +8,14 @@ export interface GroupReference {
 
 export type Reference = PrayerReference | GroupReference;
 
-export interface User {
+export interface UserData {
     id: string;
     name: string;
     email: string;
     prayers?: Reference[];
 }
 
-export interface Prayer {
+export interface PrayerData {
     id: string;
     user_id: string;
     title: string;
@@ -25,7 +25,7 @@ export interface Prayer {
     answered: boolean;
 }
 
-export interface Group {
+export interface GroupData {
     id: string;
     user_id: string;
     name: string;
