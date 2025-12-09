@@ -1,7 +1,7 @@
 {
   "name": "Still",
   "display": "standalone",
-  "start_url": "/",
+  "start_url": "/still/",
   "icons": [
     {
       "src": "dist/icon.svg",
