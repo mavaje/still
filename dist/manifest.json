@@ -4,7 +4,7 @@
   "start_url": "/still/",
   "icons": [
     {
-      "src": "dist/icon.svg",
+      "src": "icon.svg",
       "type": "image/svg+xml",
       "sizes": "any"
     }
