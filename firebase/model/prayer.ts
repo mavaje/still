@@ -1,11 +1,11 @@
-import {Table} from "./table";
+import {Model} from "./model";
 import {User} from "./user";
 
 export interface PrayerReference {
     prayer_id: string;
 }
 
-export class Prayer extends Table {
+export class Prayer extends Model {
     static table = 'prayers';
 
     user_id?: string;
@@ -16,7 +16,7 @@ export class Prayer extends Table {
     answered?: boolean = false;
 
     async save(): Promise<this> {
-        this.user_id = User.current.id;
+        this.user_id ??= User.current.id;
         return super.save();
     }
 }
