@@ -1,7 +1,7 @@
 import {Model} from "./model";
 import {auth, get_auth_user} from "../auth";
-import {PrayerReference} from "./prayer";
-import {GroupReference} from "./group";
+import {Prayer, PrayerReference} from "./prayer";
+import {Group, GroupReference} from "./group";
 import {Unsubscribe} from "@firebase/database";
 import {onAuthStateChanged} from "@firebase/auth";
 
@@ -35,5 +35,29 @@ export class User extends Model {
             unsubscribe_auth();
             unsubscribe_user?.();
         };
+    }
+
+    async add_prayer(prayer: Prayer): Promise<void> {
+        this.prayers.push({prayer_id: prayer.id});
+        await this.save();
+    }
+
+    async add_group(group: Group): Promise<void> {
+        this.prayers.push({group_id: group.id});
+        await this.save();
+    }
+
+    async process_reference<P, G>(
+        reference: PrayerReference | GroupReference,
+        process_prayer: (prayer: Prayer) => P,
+        process_group: (group: Group) => G,
+    ): Promise<P | G> {
+        if ('prayer_id' in reference) {
+            const prayer = await Prayer.find(reference.prayer_id);
+            return process_prayer(prayer);
+        } else {
+            const group = await Group.find(reference.group_id);
+            return process_group(group);
+        }
     }
 }

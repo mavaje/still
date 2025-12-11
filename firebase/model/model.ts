@@ -1,9 +1,11 @@
 import {DatabaseReference, get, onValue, ref, set, Unsubscribe} from "@firebase/database";
 import {database, sanitise} from "../database";
-import * as UUID from "uuid";
+import {v4} from "uuid";
 
 export type Data<T extends Model> = {
     [K in keyof T as T[K] extends Function ? never : K]: null | T[K];
+} & {
+    id: string;
 };
 
 export abstract class Model {
@@ -20,7 +22,7 @@ export abstract class Model {
         return ref(database, this.path(id));
     }
 
-    private static initialise<M extends typeof Model>(
+    protected static initialise<M extends typeof Model>(
         this: M,
         data: Data<InstanceType<M>>,
     ): InstanceType<M> {
@@ -31,7 +33,7 @@ export abstract class Model {
 
     static async create<M extends typeof Model>(
         this: M,
-        data: Data<InstanceType<M>>,
+        data: Data<InstanceType<M>> = {} as Data<InstanceType<M>>,
     ): Promise<InstanceType<M>> {
         return this.initialise(data).save();
     }
@@ -47,10 +49,17 @@ export abstract class Model {
 
     static async find_or_create<M extends typeof Model>(
         this: M,
-        data: Data<InstanceType<M>> & Data<Model>,
+        data: Data<InstanceType<M>>,
     ): Promise<InstanceType<M>> {
         return (await this.find(data.id))
             ?? (await this.create(data));
+    }
+
+    static shell<M extends typeof Model>(
+        this: M,
+        id: string,
+    ): InstanceType<M> {
+        return this.initialise({id} as Data<InstanceType<M>>);
     }
 
     model(): typeof Model {
@@ -87,8 +96,13 @@ export abstract class Model {
         );
     }
 
+    async update(data: Partial<Data<this>>): Promise<this> {
+        Object.assign(this, data);
+        return this.save();
+    }
+
     async save(): Promise<this> {
-        this.id ??= UUID.v4();
+        this.id ??= v4();
         await set(this.reference(), sanitise(this));
         return this;
     }

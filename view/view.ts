@@ -4,6 +4,7 @@ import {Unsubscribe} from "@firebase/database";
 type Attributes = Record<string, any>;
 type Children = (string | View)[];
 type AttributeCallback<D extends object> = (parent: D) => Attributes;
+type ClassCallback<D extends object> = (parent: D) => string[];
 type ChildrenCallback<D extends object> = (parent: D) => Children;
 
 export class View<
@@ -13,12 +14,13 @@ export class View<
     private static VIEWS: View[] = [];
 
     private _attribute_callback: AttributeCallback<D>;
+    private _class_callback: ClassCallback<D>;
     private _children_callback: ChildrenCallback<D>;
     private _children: Children = [];
 
     private listeners: Unsubscribe[] = [];
 
-    element: E;
+    readonly element: E;
     data: D = {} as D;
 
     constructor(element: E) {
@@ -61,13 +63,15 @@ export class View<
         return this;
     }
 
-    add_class(...classes: string[]): this {
-        this.element.classList.add(...classes);
-        return this;
-    }
-
-    remove_class(...classes: string[]): this {
-        this.element.classList.remove(...classes);
+    classes(...classes: string[]): this;
+    classes(callback: ClassCallback<D>): this;
+    classes(...args: string[] | [ClassCallback<D>]): this {
+        if (typeof args[0] === 'function') {
+            this._class_callback = args[0];
+            this.refresh_classes();
+        } else {
+            this.refresh_classes(() => args as string[]);
+        }
         return this;
     }
 
@@ -83,7 +87,13 @@ export class View<
         return this;
     }
 
-    listen_to<K extends string, T extends Model>(name: K, object: T): View<E, D & Record<K, T>> {
+    on<E extends keyof HTMLElementEventMap>(event: E, listener: (this: HTMLElement, event: HTMLElementEventMap[E]) => void): this {
+        this.element.addEventListener(event, listener);
+        this.listeners.push(() => this.element.removeEventListener(event, listener));
+        return this;
+    }
+
+    sync_with<K extends string, T extends Model>(name: K, object: T): View<E, D & Record<K, T>> {
         const view = this as View<E, D & Record<K, T>>;
         view.assign_data(name, object as any);
         this.listeners.push(object.listen(o => {
@@ -93,8 +103,7 @@ export class View<
         return view;
     }
 
-    clean_up(): void {
-        if (this.element.isConnected) return;
+    tear_down(): void {
         this.element.remove();
         const index = View.VIEWS.indexOf(this);
         if (index > -1) View.VIEWS.splice(index, 1);
@@ -110,6 +119,7 @@ export class View<
 
     private refresh() {
         this.refresh_attributes();
+        this.refresh_classes();
         this.refresh_children();
     }
 
@@ -125,9 +135,18 @@ export class View<
         });
     }
 
+    private refresh_classes(callback = this._class_callback) {
+        if (!callback) return;
+        this.element.className = callback(this.data)
+            .filter(Boolean)
+            .join(' ');
+    }
+
     private refresh_children(callback = this._children_callback) {
         if (!callback) return;
-        const old_children = this._children;
+        this._children
+            .filter(child => child instanceof View)
+            .forEach((child: View) => child.tear_down());
         this._children = callback(this.data);
         this.element.innerText = '';
         this._children.forEach(child => {
@@ -137,9 +156,6 @@ export class View<
                 this.element.append(child);
             }
         });
-        old_children
-            .filter(child => child instanceof View)
-            .forEach(child => child.clean_up());
     }
 }
 
@@ -159,3 +175,7 @@ export const view = new Proxy(
         }
     },
 );
+
+export function clean_text(text: string): string {
+    return text?.trim() || '';
+}

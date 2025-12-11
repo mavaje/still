@@ -1,20 +1,13 @@
-import {Model} from "./model";
 import {PrayerReference} from "./prayer";
-import {User} from "./user";
+import {OwnedModel} from "./owned-model";
 
 export interface GroupReference {
     group_id: string;
 }
 
-export class Group extends Model {
+export class Group extends OwnedModel {
     static table = 'groups';
 
-    user_id: string;
     name: string;
     prayers?: PrayerReference[] = [];
-
-    async save(): Promise<this> {
-        this.user_id ??= User.current.id;
-        return super.save();
-    }
 }

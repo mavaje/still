@@ -1,12 +1,105 @@
-header {
-    display: flex;
+body {
+    width: 100vw;
+    height: 100vh;
+    margin: 0;
 
-    #logo {
-        width: 64px;
-        height: 64px;
+    font-family: system-ui, sans-serif;
+    font-weight: 200;
+
+    .splash {
+        width: 100%;
+        height: 100%;
+
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+        img {
+            width: 25vmin;
+            height: 25vmin;
+        }
     }
 
-    h1 {
+    header {
+        display: flex;
 
+        #logo {
+            width: 64px;
+            height: 64px;
+        }
+
+        h1 {
+            font-weight: lighter;
+        }
+    }
+
+    main {
+        input {
+            border: none;
+            padding: 0;
+            font-size: unset;
+        }
+
+        .prayer-list {
+
+        }
+
+        .prayer {
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            margin: 8px;
+            padding: 8px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+
+            .title {
+                font-weight: 400;
+            }
+
+            hr {
+                width: 100%;
+                opacity: 50%;
+                //transition: margin-block 0.2s ease-in-out;
+            }
+
+            .body {
+                //transition: max-height 0.2s ease-in-out;
+            }
+
+            &.no-title {
+                .title:not(:focus-visible):before {
+                    content: 'Untitle prayer';
+                    font-style: italic;
+                    opacity: 50%;
+                    position: absolute;
+                }
+            }
+
+            //&.no-body {
+            //    hr {
+            //        margin-block: 0;
+            //    }
+            //
+            //    .body {
+            //        max-height: 0;
+            //    }
+            //
+            //    &:hover {
+            //        hr {
+            //            margin-block: 8px;
+            //        }
+            //
+            //        .body {
+            //            max-height: 20px;
+            //        }
+            //
+            //    }
+            //}
+        }
+
+        .group {
+
+        }
     }
 }
