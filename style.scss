@@ -1,8 +1,21 @@
+@use "sass:color";
+
+$light: #fff7ef;
+$dark: #2f271f;
+$mid: color.mix($light, $dark, 50%);
+
+$success: #00bf7f;
+$danger: #ff007f;
+
 body {
     width: 100vw;
     height: 100vh;
     margin: 0;
 
+    background-color: light-dark($light, $dark);
+    color: light-dark($dark, $light);
+
+    font-size: 16px;
     font-family: system-ui, sans-serif;
     font-weight: 200;
 
@@ -35,71 +48,147 @@ body {
 
     main {
         input {
+            background: none;
             border: none;
-            padding: 0;
+            border-radius: 8px;
+            padding: 8px;
             font-size: unset;
         }
 
         .prayer-list {
-
+            padding-inline: 8px;
         }
 
         .prayer {
+            padding-inline: 8px;
+            margin-inline: -8px;
             display: flex;
-            flex-direction: column;
-            align-items: stretch;
-            margin: 8px;
-            padding: 8px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+            flex-direction: row;
+            justify-content: start;
+            align-items: start;
+            transition: background-color 0.4s ease-in-out;
 
-            .title {
-                font-weight: 400;
-            }
+            &:hover {
+                background-color: rgb($mid, 6.25%);
 
-            hr {
-                width: 100%;
-                opacity: 50%;
-                //transition: margin-block 0.2s ease-in-out;
-            }
+                &:has(button.success:hover) {
+                    background-color: rgb($success, 12.5%);
+                }
 
-            .body {
-                //transition: max-height 0.2s ease-in-out;
-            }
-
-            &.no-title {
-                .title:not(:focus-visible):before {
-                    content: 'Untitle prayer';
-                    font-style: italic;
-                    opacity: 50%;
-                    position: absolute;
+                &:has(button.danger:hover) {
+                    background-color: rgb($danger, 12.5%);
                 }
             }
 
-            //&.no-body {
-            //    hr {
-            //        margin-block: 0;
-            //    }
-            //
-            //    .body {
-            //        max-height: 0;
-            //    }
-            //
-            //    &:hover {
-            //        hr {
-            //            margin-block: 8px;
-            //        }
-            //
-            //        .body {
-            //            max-height: 20px;
-            //        }
-            //
-            //    }
-            //}
+            .bullet {
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                border: 1px solid currentColor;
+                margin: 12px;
+            }
+
+            .prayer-text{
+                flex: 1;
+                padding: 8px;
+                border-radius: 8px;
+
+                &:first-line {
+                    font-weight: 400;
+                }
+
+                &.empty:not(:focus-visible)::before {
+                    content: 'New prayer';
+                    font-style: italic;
+                    opacity: 50%;
+                    position: absolute;
+                    user-select: none;
+                    pointer-events: none;
+                }
+            }
+
+            .buttons {
+                height: 32px;
+                display: flex;
+                flex-direction: row;
+                align-items: stretch;
+
+                button {
+                    flex: 1;
+                    height: 100%;
+                    width: 32px;
+                    cursor: pointer;
+                    border: none;
+                    background: none;
+                    border-radius: 50%;
+                    font-weight: bold;
+                    transition: color 0.4s ease-in-out;
+
+                    &:hover {
+                        &.success {
+                            color: color.mix($success, #000000, 50%);
+                        }
+
+                        &.danger {
+                            color: color.mix($danger, #000000, 50%);
+                        }
+                    }
+                }
+            }
         }
 
-        .group {
+        .list {
+            margin: 8px 0;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.125);
 
+            .list-header {
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+
+                &::before,
+                &::after {
+                    content: '';
+                    flex: 1;
+                    height: 1px;
+                }
+
+                &::before {
+                    background: linear-gradient(
+                            to left,
+                            currentColor,
+                            transparent
+                    );
+                }
+
+                &::after {
+                    background: linear-gradient(
+                            to right,
+                            currentColor,
+                            transparent
+                    );
+                }
+
+                .list-name {
+                    padding: 6px;
+                    border-radius: 8px;
+                    font-weight: 400;
+
+                    &.empty:not(:focus-visible)::before {
+                        content: 'New list';
+                        font-style: italic;
+                        opacity: 50%;
+                        position: absolute;
+                        user-select: none;
+                        pointer-events: none;
+                    }
+                }
+            }
+
+            .prayer-list {
+                margin-inline: -8px;
+            }
         }
     }
 }

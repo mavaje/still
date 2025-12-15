@@ -15,13 +15,13 @@
       }
     },
 
-    "groups": {
-      "$group_id": {
+    "lists": {
+      "$list_id": {
         ".read": true,
         ".write": "auth != null && (!data.exists() || auth.uid == data.child('user_id').val())",
 
         "id": {
-          ".validate": "$group_id == newData.val()"
+          ".validate": "$list_id == newData.val()"
         },
 
         "user_id": {
@@ -45,7 +45,7 @@
 
         "prays": {
           ".write": true,
-          ".validate": "newData.val() >= data.val()"
+          ".validate": "!data.exists() || newData.val() >= data.val()"
         }
       }
     }

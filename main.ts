@@ -1,33 +1,61 @@
+import {get_auth_user} from "./firebase/auth";
+import {List} from "./firebase/model/list";
+import {Prayer} from "./firebase/model/prayer";
 import {User} from "./firebase/model/user";
 import {load_document, view} from "./view/view";
 import {Service} from "./service";
 import {prayer_list} from "./view/prayer-list";
 
 load_document().then(async root => {
-    await User.get_current();
-
-    root.children(() => [
-            view.header()
-                .children(
-                    view.img('logo').attributes({
-                        src: 'dist/icon.svg',
-                        alt: 'Logo',
-                    }),
-                    view.h1().children('Still')
-                ),
-            view.main()
-                .sync_with('user', User.current)
-                .children(({user}) =>
-                    [
-                        prayer_list(user.prayers),
-                        view.button('add-prayer')
-                            .children('New Prayer')
-                            .on('click', Service.create_prayer),
-                        view.button('add-group')
-                            .children('New Group')
-                            .on('click', Service.create_group),
-                    ]
-                ),
-        ]);
+    let start = Date.now();
+    const checkpoint = (name: string) => {
+        const end = Date.now();
+        console.log(`${end - start}ms`.padStart(6), ` - ${name}`);
+        start = end;
     }
-);
+
+    await get_auth_user();
+    checkpoint('load auth user');
+
+    await User.get_current();
+    checkpoint('load current user');
+
+    await List.get_current();
+    checkpoint('load current list');
+
+    const url = new URL(location.href);
+
+    const prayer_id = url.searchParams.get('prayer_id');
+    if (prayer_id) {
+        const prayer = await Prayer.find(prayer_id);
+        if (prayer) {
+            await Service.add_item(prayer, List.current);
+        }
+    }
+    checkpoint('checking prayer param');
+
+    const list_id = url.searchParams.get('list_id');
+    if (list_id) {
+        const list = await List.find(list_id);
+        if (list) {
+            await Service.add_item(list, List.current);
+        }
+    }
+    checkpoint('checking list param');
+
+    root.children(
+        view.header(),
+        view.main()
+            .sync_with('user', User.current)
+            .children(() => [
+                view.div()
+                    .children(prayer_list(List.current)),
+                view.button('add-prayer')
+                    .children('New Prayer')
+                    .on('click', () => Service.create_prayer(List.current)),
+                view.button('add-list')
+                    .children('New List')
+                    .on('click', () => Service.create_list(List.current)),
+            ])
+    );
+});

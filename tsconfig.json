@@ -3,7 +3,7 @@
     "allowSyntheticDefaultImports": true,
     "target": "esnext",
     "module": "esnext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "allowJs": true

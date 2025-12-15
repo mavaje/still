@@ -3,17 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <title>Still</title>
-    <script src="dist/main.js"></script>
-    <link rel="icon" href="dist/icon.svg" sizes="any" type="image/svg+xml">
-    <link rel="manifest" href="dist/manifest.json">
-    <link rel="stylesheet" href="dist/main.css">
+    <script src="main.ts" type="module"></script>
+    <link rel="icon" href="public/icon.svg" sizes="any" type="image/svg+xml">
+    <link rel="manifest" href="manifest.json" vite-ignore>
+    <link rel="stylesheet" href="style.scss">
 </head>
 <body>
-    <div class="splash">
-        <img
-            src="dist/icon.svg"
+    <header>
+        <img id="logo"
+            src="public/icon.svg"
             alt="Still"
         >
-    </div>
+        <h1>
+            Still
+        </h1>
+    </header>
 </body>
 </html>

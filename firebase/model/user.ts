@@ -1,18 +1,14 @@
 import {Model} from "./model";
-import {auth, get_auth_user} from "../auth";
-import {Prayer, PrayerReference} from "./prayer";
-import {Group, GroupReference} from "./group";
-import {Unsubscribe} from "@firebase/database";
-import {onAuthStateChanged} from "@firebase/auth";
+import {get_auth_user, listen_to_auth_user} from "../auth";
+import {Unsubscribe} from "firebase/database";
 
 export class User extends Model {
     static table = 'users';
 
     static current: User = new User();
 
-    email: string;
-    name?: string;
-    prayers?: (PrayerReference | GroupReference)[] = [];
+    email?: string;
+    list_id?: string;
 
     static async get_current(): Promise<User> {
         const auth_user = await get_auth_user();
@@ -20,13 +16,21 @@ export class User extends Model {
         return User.current = await User.find_or_create({
             id: auth_user.uid,
             email: auth_user.email,
+            list_id: Model.random_id(),
         });
+    }
+
+    can_write(): boolean {
+        return this.id === User.current.id;
     }
 
     listen(callback: (object: this) => void): Unsubscribe {
         let unsubscribe_user: Unsubscribe = null;
-        const unsubscribe_auth = onAuthStateChanged(auth, async user => {
-            this.id = user.uid;
+        const unsubscribe_auth = listen_to_auth_user(async auth_user => {
+
+            this.id = auth_user.uid;
+            this.email = auth_user.email;
+
             unsubscribe_user?.();
             unsubscribe_user = super.listen(callback);
         });
@@ -35,29 +39,5 @@ export class User extends Model {
             unsubscribe_auth();
             unsubscribe_user?.();
         };
-    }
-
-    async add_prayer(prayer: Prayer): Promise<void> {
-        this.prayers.push({prayer_id: prayer.id});
-        await this.save();
-    }
-
-    async add_group(group: Group): Promise<void> {
-        this.prayers.push({group_id: group.id});
-        await this.save();
-    }
-
-    async process_reference<P, G>(
-        reference: PrayerReference | GroupReference,
-        process_prayer: (prayer: Prayer) => P,
-        process_group: (group: Group) => G,
-    ): Promise<P | G> {
-        if ('prayer_id' in reference) {
-            const prayer = await Prayer.find(reference.prayer_id);
-            return process_prayer(prayer);
-        } else {
-            const group = await Group.find(reference.group_id);
-            return process_group(group);
-        }
     }
 }
