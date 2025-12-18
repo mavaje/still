@@ -1,31 +1,35 @@
 import {ListReference, Reference} from "./model";
 import {OwnedModel} from "./owned-model";
-import {User} from "./user";
+import {Field} from "./field";
+import {get_auth_user, listen_to_auth_user} from "../auth";
+import {doc} from "@firebase/firestore";
 
 export class List extends OwnedModel {
     static table = 'lists';
 
-    static current: List = new List();
+    static root: List = new List(true);
 
-    name?: string;
+    name = new Field<string>(this, 'name');
     items?: Reference[] = [];
+
+    constructor(protected is_root = false) {
+        super();
+        if (this.is_root) {
+            listen_to_auth_user(auth_user => {
+                this.reference = doc(List.collection(), auth_user.uid);
+                this.snapshot = null;
+            });
+        }
+    }
+
+    static async get_current(): Promise<List> {
+        const auth_user = await get_auth_user();
+        return List.root = await List.find(auth_user.uid).initialise();
+    }
 
     item_reference(): ListReference {
         return {
             list_id: this.id,
         };
-    }
-
-    static async get_current(): Promise<List> {
-        const user = await User.get_current();
-
-        List.current = await List.find_or_create({
-            id: user.list_id,
-            user_id: user.id,
-        });
-
-        await user.update({list_id: List.current.id});
-
-        return List.current;
     }
 }

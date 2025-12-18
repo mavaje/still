@@ -1,12 +1,14 @@
-import {Data, Model, Reference} from "./model";
+import {Model, Reference} from "./model";
 import {User} from "./user";
+import {Field} from "./field";
+import {get_auth_id} from "../auth";
 
 export abstract class OwnedModel extends Model {
 
-    user_id?: string;
+    user_id = new Field<string>(this, 'user_id', get_auth_id);
 
     is_mine(): boolean {
-        return this.user_id === User.current.id;
+        return this.user_id.value === User.auth.id;
     }
 
     can_write(): boolean {
@@ -15,16 +17,5 @@ export abstract class OwnedModel extends Model {
 
     item_reference(): Reference {
         return null;
-    }
-
-    async update(data: Partial<Data<this>>): Promise<this> {
-        return this.is_mine()
-            ? super.update(data)
-            : this;
-    }
-
-    async save(): Promise<this> {
-        this.user_id = User.current.id;
-        return super.save();
     }
 }

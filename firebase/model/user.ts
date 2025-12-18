@@ -1,43 +1,50 @@
 import {Model} from "./model";
 import {get_auth_user, listen_to_auth_user} from "../auth";
-import {Unsubscribe} from "firebase/database";
+import {Field} from "./field";
+import {doc, Unsubscribe} from "@firebase/firestore";
 
 export class User extends Model {
     static table = 'users';
 
-    static current: User = new User();
+    static auth: User = new User(true);
 
-    email?: string;
-    list_id?: string;
+    email = new Field<string>(this, 'email', async () => (await get_auth_user()).email);
+
+    constructor(protected is_auth = false) {
+        super();
+        if (this.is_auth) {
+            listen_to_auth_user(auth_user => {
+                this.reference = doc(User.collection(), auth_user.uid);
+                this.snapshot = null;
+            });
+        }
+    }
 
     static async get_current(): Promise<User> {
         const auth_user = await get_auth_user();
-
-        return User.current = await User.find_or_create({
-            id: auth_user.uid,
-            email: auth_user.email,
-            list_id: Model.random_id(),
-        });
+        return User.auth = await User.find(auth_user.uid).initialise();
     }
 
     can_write(): boolean {
-        return this.id === User.current.id;
+        return this.id === User.auth.id;
     }
 
     listen(callback: (object: this) => void): Unsubscribe {
-        let unsubscribe_user: Unsubscribe = null;
-        const unsubscribe_auth = listen_to_auth_user(async auth_user => {
+        if (this.is_auth) {
+            let unsubscribe_user: Unsubscribe = null;
+            const unsubscribe_auth = listen_to_auth_user(async () => {
+                const user = await User.get_current();
+                this.replace_with(user);
+                unsubscribe_user?.();
+                unsubscribe_user = super.listen(callback);
+            });
 
-            this.id = auth_user.uid;
-            this.email = auth_user.email;
-
-            unsubscribe_user?.();
-            unsubscribe_user = super.listen(callback);
-        });
-
-        return () => {
-            unsubscribe_auth();
-            unsubscribe_user?.();
-        };
+            return () => {
+                unsubscribe_auth();
+                unsubscribe_user?.();
+            };
+        } else {
+            return super.listen(callback);
+        }
     }
 }

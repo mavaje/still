@@ -1,11 +1,20 @@
-import {DatabaseReference, get, onValue, ref, runTransaction, set, Unsubscribe} from "firebase/database";
-import {database} from "../database";
-import {v4} from "uuid";
+import {firestore} from "../firestore";
+import {
+    addDoc,
+    collection,
+    CollectionReference,
+    doc,
+    DocumentReference,
+    DocumentSnapshot,
+    getDoc,
+    onSnapshot,
+    setDoc,
+    Unsubscribe,
+} from "@firebase/firestore";
+import {Field} from "./field";
 
-export type Data<T extends Model> = {
-    [K in keyof T as T[K] extends Function ? never : K]: null | T[K];
-} & {
-    id: string;
+export type Data<M extends Model> = {
+    [K in keyof M as M[K] extends Field ? K : never]?: M[K] extends Field<infer T> ? T : never;
 };
 
 export interface PrayerReference {
@@ -19,153 +28,91 @@ export interface ListReference {
 export type Reference = PrayerReference | ListReference;
 
 export abstract class Model {
-
     static table: string;
 
-    static ignore_fields: string[] = [
-        'exists',
-    ];
+    protected reference: DocumentReference;
+    protected snapshot: DocumentSnapshot;
 
-    id?: string;
-    exists?: boolean;
-
-    static random_id(): string {
-        return v4();
+    get id() {
+        return this.reference?.id;
     }
 
-    static path(id: string): string {
-        return `${this.table}/${id}`;
+    get exists() {
+        return this.snapshot?.exists();
     }
 
-    static reference(id: string): DatabaseReference {
-        return ref(database, this.path(id));
+    static collection(): CollectionReference {
+        return collection(firestore, this.table);
     }
 
-    private static sanitise(object: any, ignore_fields: string[] = []): any {
-        switch (typeof object) {
-            case "object":
-            case "undefined":
-                if (object) {
-                    return Object.fromEntries(
-                        Object.entries(object)
-                            .filter(([key]) => !ignore_fields.includes(key))
-                            .map(([key, value]) => [key, Model.sanitise(value)])
-                    );
-                } else {
-                    return null;
-                }
-            case "boolean":
-            case "number":
-            case "string":
-                return object;
+    protected static instance<M extends typeof Model>(this: M, reference: DocumentReference): InstanceType<M> {
+        const model = new (this as any)() as InstanceType<M>;
+        model.reference = reference;
+        return model;
+    }
+
+    static async new<M extends typeof Model>(
+        this: M,
+        data: Data<InstanceType<M>> = {},
+    ): Promise<InstanceType<M>> {
+        const model = this.instance(null);
+        data = await model.initial_data(data);
+        model.reference = await addDoc(this.collection(), data as object);
+        return model;
+    }
+
+    static find<M extends typeof Model>(this: M, id: string): InstanceType<M> {
+        const reference = doc(this.collection(), id);
+        return this.instance(reference);
+    }
+
+    async initial_data(data: Data<this> = {}): Promise<Data<this>> {
+        for (const field of this.fields()) {
+            data[field.name] ??= await field.initial_value(data[field.name]);
+            if (data[field.name] === null) delete data[field.name];
         }
-    }
-
-    protected static initialise<M extends typeof Model>(
-        this: M,
-        data: Data<InstanceType<M>>,
-        exists: boolean = false,
-    ): InstanceType<M> {
-        const object =  new (this as any)();
-        Object.assign(object, data);
-        object.exists = exists;
-        return object;
-    }
-
-    static async create<M extends typeof Model>(
-        this: M,
-        data: Data<InstanceType<M>> = {} as Data<InstanceType<M>>,
-    ): Promise<InstanceType<M>> {
-        return this.initialise(data).save();
-    }
-
-    static async find<M extends typeof Model>(
-        this: M,
-        id: string,
-    ): Promise<InstanceType<M>> {
-        const snapshot = await get(this.reference(id));
-        const data = snapshot.val();
-        return data ? this.initialise(data, true) : null;
-    }
-
-    static async find_or_create<M extends typeof Model>(
-        this: M,
-        data: Data<InstanceType<M>>,
-    ): Promise<InstanceType<M>> {
-        return (await this.find(data.id))
-            ?? (await this.create(data));
-    }
-
-    static shell<M extends typeof Model>(
-        this: M,
-        id: string,
-    ): InstanceType<M> {
-        return this.initialise({id} as Data<InstanceType<M>>, false);
-    }
-
-    model(): typeof Model {
-        return this.constructor as typeof Model;
-    }
-
-    path() {
-        return this.model().path(this.id);
-    }
-
-    reference() {
-        return this.model().reference(this.id);
+        return data;
     }
 
     can_write(): boolean {
         return false;
     }
 
-    listen(callback: (object: this) => void): Unsubscribe {
-        return onValue(this.reference(), snapshot => {
-            const data = snapshot.val();
-            if (data) {
-                Object.assign(this, data);
-                this.exists = true;
-                callback(this);
-            } else {
-                this.exists = false;
-                callback(null);
-            }
+    fields(): Field[] {
+        return Object.values(this)
+            .filter(field => field instanceof Field);
+    }
+
+    data(): Data<this> {
+        return this.snapshot?.data() as Data<this> ?? null;
+    }
+
+    replace_with<M extends Model>(this: M, model: M): M {
+        this.reference = model.reference;
+        this.snapshot = model.snapshot;
+        return this;
+    }
+
+    async read(): Promise<Data<this>> {
+        this.snapshot = await getDoc(this.reference);
+        return this.data();
+    }
+
+    async initialise(data: Data<this> = {}): Promise<this> {
+        data = await this.initial_data(data);
+        await this.write(data);
+        return this;
+    }
+
+    async write(data: Data<this>, merge: boolean = true): Promise<void> {
+        await setDoc(this.reference, data as object, {merge});
+        await this.read();
+    }
+
+    listen(callback: (model: this) => void): Unsubscribe {
+        return onSnapshot(this.reference, snapshot => {
+            this.snapshot = snapshot;
+            callback(this);
         });
-    }
-
-    async refresh(): Promise<this> {
-        return new Promise<this>(done =>
-            onValue(this.reference(), snapshot => {
-                const data = snapshot.val();
-                if (data) Object.assign(this, data);
-                this.exists = !!data;
-                done(this);
-            }, {
-                onlyOnce: true,
-            })
-        );
-    }
-
-    async update(data: Partial<Data<this>>): Promise<this> {
-        Object.assign(this, data);
-        return this.save();
-    }
-
-    async save(): Promise<this> {
-        this.id ??= Model.random_id();
-        await set(this.reference(), Model.sanitise(this, this.model().ignore_fields));
-        this.exists = true;
-        return this;
-    }
-
-    async transaction(callback: (model: this) => this): Promise<boolean> {
-        const result = await runTransaction(this.reference(), callback);
-        return result.committed;
-    }
-
-    async delete(): Promise<this> {
-        await set(this.reference(), null);
-        this.exists = false;
-        return this;
     }
 }

@@ -9,6 +9,10 @@ export async function get_auth_user(): Promise<User> {
     return auth.currentUser;
 }
 
+export async function get_auth_id(): Promise<string> {
+    return (await get_auth_user()).uid;
+}
+
 export function listen_to_auth_user(callback: (auth_user: User) => void): Unsubscribe {
     return onAuthStateChanged(auth, callback);
 }

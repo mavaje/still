@@ -1,12 +1,14 @@
 import {PrayerReference} from "./model";
 import {OwnedModel} from "./owned-model";
+import {Field} from "./field";
+import {increment} from "@firebase/firestore";
 
 export class Prayer extends OwnedModel {
     static table = 'prayers';
 
-    text?: string;
-    prays?: number = 0;
-    answered?: boolean = false;
+    text = new Field<string>(this, 'text');
+    prays = new Field<number>(this, 'prays', 0);
+    answered = new Field<boolean>(this, 'answered', false);
 
     item_reference(): PrayerReference {
         return {
@@ -15,14 +17,6 @@ export class Prayer extends OwnedModel {
     }
 
     async pray() {
-        return this.transaction(prayer => {
-            if (prayer) prayer.prays++;
-            return prayer;
-        });
-    }
-
-    async answer(answered = !this.answered) {
-        this.answered = answered;
-        return this.save();
+        return this.prays.write(increment(1));
     }
 }

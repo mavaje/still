@@ -5,7 +5,7 @@ import {view} from "./view";
 export function prayer_view(id: string, list: List) {
     return view.div(`prayer-${id}`)
         .set_up(prayer_text => prayer_text
-            .sync_with('prayer', Prayer.shell(id))
+            .sync_with('prayer', Prayer.find(id))
         )
         .classes('prayer')
         .children(({prayer}) => [
@@ -14,18 +14,18 @@ export function prayer_view(id: string, list: List) {
             view.div()
                 .classes(
                     'prayer-text',
-                    !prayer.text?.trim() && 'empty',
+                    !prayer.text.value?.trim() && 'empty',
                 )
                 .attributes({
                     contenteditable: prayer.is_mine(),
                 })
-                .children(prayer.text)
+                .children(prayer.text.value)
                 .on('blur', target => {
                     const text = target.element.innerText
                         .replace(/\u200B/g, '')
                         .trim();
                     target.children(text);
-                    prayer.update({text});
+                    prayer.write({text});
                 })
                 .on('keypress', (target, event) => {
                     if (event.key === 'Enter') {
@@ -54,10 +54,10 @@ export function prayer_view(id: string, list: List) {
                     view.input()
                         .attributes({
                             type: 'checkbox',
-                            checked: prayer.answered,
+                            checked: prayer.answered.value,
                             disabled: !prayer.is_mine(),
                         })
-                        .on('change', () => prayer.answer()),
+                        .on('change', () => prayer.answered.write(!prayer.answered.value)),
                     view.button()
                         .children('share')
                         .on('click', () => console.log(prayer.id)),
